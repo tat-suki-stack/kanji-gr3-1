@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漢字みなおしテスト（3年生）</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    background: #eaf4fb;
+    min-height: 100vh;
+    display: flex; justify-content: center;
+    padding: 16px;
+  }
+  .app { width: 100%; max-width: 560px; }
+  .card {
+    background: #fff; border-radius: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.1);
+    padding: 28px 24px; text-align: center;
+  }
+  h1 { font-size: 26px; color: #1a6fb5; margin-bottom: 8px; }
+  .sub { color:#555; font-size:15px; margin-bottom:20px; line-height:1.7; }
+  button.big {
+    font-size: 22px; font-weight: bold; color:#fff;
+    background: #1a6fb5; border:none; border-radius: 14px;
+    padding: 16px 48px; cursor:pointer; margin-top:8px;
+  }
+  button.big:active { transform: scale(.97); }
+  .progress-wrap { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+  .progress-bar { flex:1; height:12px; background:#d7e7f2; border-radius:6px; overflow:hidden; }
+  .progress-fill { height:100%; background:#1a6fb5; width:0%; transition:width .3s; }
+  .qnum { font-size:14px; color:#1a6fb5; font-weight:bold; white-space:nowrap; }
+  .sentence {
+    font-size: 30px; line-height: 2; margin: 18px 0 26px;
+    color:#222; letter-spacing: 2px;
+  }
+  .blank {
+    display:inline-block; border: 2px dashed #e0762f;
+    background:#fff4ea; color:#e0762f; font-weight:bold;
+    border-radius: 8px; padding: 2px 10px; margin: 0 2px;
+    font-size: 26px;
+  }
+  .choices { display:flex; gap:14px; justify-content:center; }
+  .choice {
+    flex:1; max-width:130px;
+    font-size: 40px; font-weight:bold; color:#222;
+    background:#f4f8fb; border: 3px solid #bcd6ea;
+    border-radius: 16px; padding: 18px 0; cursor:pointer;
+  }
+  .choice:active { transform: scale(.96); }
+  .choice.correct { background:#e6f7e6; border-color:#3aa63a; color:#2c7a2c; }
+  .choice.wrong { background:#fdeaea; border-color:#d84a4a; color:#c22; }
+  .choice:disabled { cursor:default; }
+  .feedback { font-size: 40px; height: 56px; margin-top: 18px; font-weight:bold; }
+  .feedback .ok { color:#d84a4a; }
+  .feedback .ng { color:#1a6fb5; font-size: 24px; }
+  .next-btn {
+    font-size:18px; font-weight:bold; color:#fff; background:#e0762f;
+    border:none; border-radius:12px; padding:12px 40px; cursor:pointer;
+    margin-top:10px; visibility:hidden;
+  }
+  .score { font-size: 54px; color:#e0762f; font-weight:bold; margin: 10px 0; }
+  .msg { font-size: 20px; color:#333; margin-bottom: 18px; }
+  .review { text-align:left; margin: 18px 0; }
+  .review h3 { font-size:16px; color:#1a6fb5; margin-bottom:8px; }
+  .review-item {
+    background:#f7fafc; border-radius:10px; padding:10px 14px;
+    margin-bottom:8px; font-size:18px; line-height:1.8;
+  }
+  .review-item .ans { color:#2c7a2c; font-weight:bold; font-size:22px; }
+  .review-item .yours { color:#c22; }
+  .ranking { text-align:left; margin: 18px 0; }
+  .ranking h3 { font-size:16px; color:#1a6fb5; margin-bottom:8px; }
+  .rank-row {
+    display:flex; justify-content:space-between; align-items:center;
+    background:#f7fafc; border-radius:10px; padding:8px 14px;
+    margin-bottom:6px; font-size:18px;
+  }
+  .rank-row.me { background:#fff4ea; border:2px solid #e0762f; font-weight:bold; }
+  .rank-row .pt { font-size:22px; font-weight:bold; color:#e0762f; }
+  .rank-row .date { font-size:13px; color:#888; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- スタート画面 -->
+  <div class="card" id="start-screen">
+    <h1>漢字みなおしテスト</h1>
+    <p class="sub">3年生 1学期のかん字<br>
+    〔　〕に あてはまる かん字や、<br>正しい送りがなを 3つの中から えらぼう。<br>
+    ぜんぶで <b>20問</b>。まい回ちがう問題が出るよ。</p>
+    <button class="big" onclick="startQuiz()">スタート！</button>
+  </div>
+
+  <!-- 問題画面 -->
+  <div class="card hidden" id="quiz-screen">
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="pfill"></div></div>
+      <div class="qnum" id="qnum"></div>
+    </div>
+    <div class="sentence" id="sentence"></div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="next-btn" onclick="nextQ()">つぎへ ▶</button>
+  </div>
+
+  <!-- 結果画面 -->
+  <div class="card hidden" id="result-screen">
+    <h1>けっか</h1>
+    <div class="score" id="score"></div>
+    <div class="msg" id="msg"></div>
+    <div class="review" id="review"></div>
+    <div class="ranking" id="ranking"></div>
+    <button class="big" onclick="startQuiz()">もう一回！</button>
+  </div>
+
+</div>
+
+<script>
+// 問題プール: s=文（●が空らん）, r=読み, a=正かい, w=まちがい選たくし2つ
+const POOL = [
+  {s:"漢字の練●をする。", r:"しゅう", a:"習", w:["週","集"]},
+  {s:"●物園に行く。", r:"どう", a:"動", w:["同","道"]},
+  {s:"やおやの●売。", r:"しょう", a:"商", w:["消","相"]},
+  {s:"はたけの作●。", r:"もつ", a:"物", w:["者","持"]},
+  {s:"家●で出かける。", r:"ぞく", a:"族", w:["旅","放"]},
+  {s:"●店時間をしらべる。", r:"かい", a:"開", w:["門","間"]},
+  {s:"ものがたりに●場する。", r:"とう", a:"登", w:["豆","答"]},
+  {s:"大●な話。", r:"じ", a:"事", w:["字","次"]},
+  {s:"お●をかぶる。", r:"めん", a:"面", w:["画","回"]},
+  {s:"近●の公園であそぶ。", r:"じょ", a:"所", w:["助","初"]},
+  {s:"みどりの●っぱ。", r:"は", a:"葉", w:["歯","羽"]},
+  {s:"木の●がなる。", r:"み", a:"実", w:["見","身"]},
+  {s:"電話番●をおぼえる。", r:"ごう", a:"号", w:["合","強"]},
+  {s:"図書●に行く。", r:"かん", a:"館", w:["間","官"]},
+  {s:"じぶんの●見を言う。", r:"い", a:"意", w:["医","委"]},
+  {s:"あま●をのむ。", r:"ざけ", a:"酒", w:["池","洋"]},
+  {s:"答えを●う。", r:"と", a:"問", w:["間","聞"]},
+  {s:"●がうすい。", r:"あじ", a:"味", w:["未","妹"]},
+  {s:"えんぴつを●う。", r:"つか", a:"使", w:["仕","便"]},
+  {s:"●海にすむ魚。", r:"しん", a:"深", w:["新","親"]},
+  {s:"●字のべんきょう。", r:"かん", a:"漢", w:["感","館"]},
+  {s:"スープを●める。", r:"あたた", a:"温", w:["湯","流"]},
+  {s:"●らな道を歩く。", r:"たい", a:"平", w:["半","干"]},
+  {s:"本の●名を書く。", r:"だい", a:"題", w:["第","台"]},
+  {s:"図かんで●べる。", r:"しら", a:"調", w:["週","語"]},
+  {s:"文●を書く。", r:"しょう", a:"章", w:["商","早"]},
+  {s:"名前の●来を聞く。", r:"ゆ", a:"由", w:["田","申"]},
+  {s:"英語の●音。", r:"はつ", a:"発", w:["登","初"]},
+  {s:"となりの●に行く。", r:"けん", a:"県", w:["具","直"]},
+  {s:"●話を聞く。", r:"むかし", a:"昔", w:["音","苦"]},
+  {s:"本の目●を見る。", r:"じ", a:"次", w:["氷","欠"]},
+  {s:"ゆうびん●に行く。", r:"きょく", a:"局", w:["曲","店"]},
+  {s:"かき●を食べる。", r:"ごおり", a:"氷", w:["水","永"]},
+  {s:"野●をする。", r:"きゅう", a:"球", w:["級","急"]},
+  {s:"●名な人に会う。", r:"ゆう", a:"有", w:["友","右"]},
+  {s:"五●数える。", r:"びょう", a:"秒", w:["病","表"]},
+  {s:"●の門から入る。", r:"おもて", a:"表", w:["氷","病"]},
+  {s:"●家でやさいを作る。", r:"のう", a:"農", w:["曲","家"]},
+  {s:"ボールを●とす。", r:"お", a:"落", w:["薬","客"]},
+  {s:"●手のチーム。", r:"あい", a:"相", w:["合","会"]},
+  {s:"●服を着る。", r:"よう", a:"洋", w:["羊","様"]},
+  {s:"服の●理をする。", r:"せい", a:"整", w:["正","生"]},
+  {s:"駅に●く。", r:"つ", a:"着", w:["付","次"]},
+  {s:"●心がつく。", r:"けっ", a:"決", w:["欠","池"]},
+  {s:"●をたたむ。", r:"ふく", a:"服", w:["福","月"]},
+  {s:"●界中の海。", r:"せ", a:"世", w:["正","生"]},
+  {s:"●員がそろう。", r:"ぜん", a:"全", w:["金","会"]},
+  {s:"やさいが●い。", r:"やす", a:"安", w:["家","字"]},
+  {s:"●園地に行く。", r:"ゆう", a:"遊", w:["有","夕"]},
+  {s:"日時を●める。", r:"さだ", a:"定", w:["決","家"]},
+  {s:"せ●地図を見る。", r:"かい", a:"界", w:["会","回"]},
+  {s:"●だん歩道をわたる。", r:"おう", a:"横", w:["黄","王"]},
+  {s:"●でさししめす。", r:"ゆび", a:"指", w:["持","拾"]},
+  {s:"おきゃく●がくる。", r:"さま", a:"様", w:["横","校"]},
+  {s:"●いえんぴつ。", r:"みじか", a:"短", w:["豆","知"]},
+  {s:"●分をとる。", r:"てつ", a:"鉄", w:["線","金"]},
+  {s:"本を●す。", r:"かえ", a:"返", w:["帰","反"]},
+  {s:"東京に●む。", r:"す", a:"住", w:["柱","注"]},
+  {s:"はがきを●る。", r:"おく", a:"送", w:["近","返"]},
+  {s:"いすを●ぶ。", r:"はこ", a:"運", w:["連","道"]},
+  {s:"木々の●。", r:"みどり", a:"緑", w:["線","絵"]},
+  {s:"●習をする。", r:"よ", a:"予", w:["夜","野"]},
+  {s:"心に●じる。", r:"かん", a:"感", w:["漢","館"]},
+  {s:"●しい話を聞く。", r:"かな", a:"悲", w:["波","悪"]},
+  {s:"ごみを●う。", r:"ひろ", a:"拾", w:["持","指"]},
+  {s:"天気が●い。", r:"わる", a:"悪", w:["思","悲"]},
+  {s:"手に●つ。", r:"も", a:"持", w:["待","指"]},
+  {s:"本の感●を書く。", r:"そう", a:"想", w:["相","思"]},
+  {s:"通学●を歩く。", r:"ろ", a:"路", w:["道","足"]},
+  {s:"道●をかたづける。", r:"ぐ", a:"具", w:["貝","見"]},
+  {s:"学校へ●かう。", r:"む", a:"向", w:["回","同"]},
+  {s:"●道を行く。", r:"さか", a:"坂", w:["板","反"]},
+  {s:"川●に立つ。", r:"ぎし", a:"岸", w:["岩","炭"]},
+  {s:"太●の光。", r:"よう", a:"陽", w:["場","湯"]},
+  {s:"文を●切る。", r:"く", a:"区", w:["工","口"]},
+  {s:"漢字の●習。", r:"れん", a:"練", w:["線","緑"]},
+  {s:"水●大会に出る。", r:"えい", a:"泳", w:["永","氷"]},
+  {s:"先生に●し出る。", r:"もう", a:"申", w:["由","田"]},
+  {s:"●話を読む。", r:"どう", a:"童", w:["里","重"]},
+  {s:"友だちを●ける。", r:"たす", a:"助", w:["動","力"]}
+];
+
+// 送りがな問題プール: 正しい送りがなをえらぶ
+const POOL_OK = [
+  {s:"友だちを●。", r:"たすける", a:"助ける", w:["助すける","助る"]},
+  {s:"ごみを●。", r:"ひろう", a:"拾う", w:["拾ろう","拾らう"]},
+  {s:"答えを●。", r:"とう", a:"問う", w:["問とう","問おう"]},
+  {s:"スープを●。", r:"あたためる", a:"温める", w:["温ためる","温る"]},
+  {s:"●話を聞く。", r:"かなしい", a:"悲しい", w:["悲なしい","悲い"]},
+  {s:"ねだんが●。", r:"やすい", a:"安い", w:["安すい","安やい"]},
+  {s:"学校へ●。", r:"むかう", a:"向かう", w:["向う","向こう"]},
+  {s:"にもつを●。", r:"はこぶ", a:"運ぶ", w:["運こぶ","運ごぶ"]},
+  {s:"はがきを●。", r:"おくる", a:"送る", w:["送くる","送おる"]},
+  {s:"日時を●。", r:"さだめる", a:"定める", w:["定だめる","定る"]},
+  {s:"●えんぴつ。", r:"みじかい", a:"短い", w:["短かい","短じかい"]},
+  {s:"本を●。", r:"かえす", a:"返す", w:["返えす","返かえす"]},
+  {s:"東京に●。", r:"すむ", a:"住む", w:["住すむ","住うむ"]},
+  {s:"手に●。", r:"もつ", a:"持つ", w:["持もつ","持う"]},
+  {s:"ボールを●。", r:"おとす", a:"落とす", w:["落す","落とおす"]},
+  {s:"駅に●。", r:"つく", a:"着く", w:["着つく","着ずく"]},
+  {s:"行き先を●。", r:"きめる", a:"決める", w:["決る","決きめる"]},
+  {s:"図かんで●。", r:"しらべる", a:"調べる", w:["調らべる","調る"]},
+  {s:"えんぴつを●。", r:"つかう", a:"使う", w:["使かう","使つかう"]},
+  {s:"●海にもぐる。", r:"ふかい", a:"深い", w:["深かい","深ぶかい"]},
+  {s:"●な道を歩く。", r:"たいら", a:"平ら", w:["平いら","平たら"]},
+  {s:"公園で●。", r:"あそぶ", a:"遊ぶ", w:["遊そぶ","遊すぶ"]},
+  {s:"プールで●。", r:"およぐ", a:"泳ぐ", w:["泳よぐ","泳おぐ"]},
+  {s:"先生に●し出る。", r:"もうし", a:"申し", w:["申うし","申もうし"]},
+  {s:"ゆびで●。", r:"さす", a:"指す", w:["指しす","指ざす"]},
+  {s:"へやを●。", r:"ととのえる", a:"整える", w:["整のえる","整る"]},
+  {s:"天気が●。", r:"わるい", a:"悪い", w:["悪るい","悪らい"]},
+  {s:"まどを●。", r:"あける", a:"開ける", w:["開る","開あける"]},
+  {s:"山に●。", r:"のぼる", a:"登る", w:["登ぼる","登のぼる"]}
+];
+
+const N = 20;
+let quiz = [], idx = 0, correctCount = 0, misses = [];
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function startQuiz(){
+  // 漢字13問 + 送りがな7問をまぜて出題
+  quiz = shuffle(
+    shuffle(POOL).slice(0,13).concat(shuffle(POOL_OK).slice(0,7))
+  );
+  idx = 0; correctCount = 0; misses = [];
+  show("quiz-screen");
+  renderQ();
+}
+
+function show(id){
+  ["start-screen","quiz-screen","result-screen"].forEach(x=>
+    document.getElementById(x).classList.toggle("hidden", x!==id));
+}
+
+function renderQ(){
+  const q = quiz[idx];
+  document.getElementById("qnum").textContent = (idx+1)+" / "+N;
+  document.getElementById("pfill").style.width = (idx/N*100)+"%";
+  document.getElementById("sentence").innerHTML =
+    q.s.replace("●", '<span class="blank">'+q.r+'</span>');
+  const box = document.getElementById("choices");
+  box.innerHTML = "";
+  shuffle([q.a, ...q.w]).forEach(c=>{
+    const b = document.createElement("button");
+    b.className = "choice";
+    if(c.length > 1){ b.style.fontSize = "24px"; b.style.maxWidth = "160px"; }
+    b.textContent = c;
+    b.onclick = ()=>answer(b, c, q);
+    box.appendChild(b);
+  });
+  document.getElementById("feedback").innerHTML = "";
+  document.getElementById("next-btn").style.visibility = "hidden";
+}
+
+function answer(btn, c, q){
+  document.querySelectorAll(".choice").forEach(b=>{
+    b.disabled = true;
+    if(b.textContent === q.a) b.classList.add("correct");
+  });
+  const fb = document.getElementById("feedback");
+  if(c === q.a){
+    correctCount++;
+    fb.innerHTML = '<span class="ok">⭕ せいかい！</span>';
+  } else {
+    btn.classList.add("wrong");
+    fb.innerHTML = '<span class="ng">❌ ざんねん… 正かいは「'+q.a+'」</span>';
+    misses.push({q, yours:c});
+  }
+  document.getElementById("next-btn").style.visibility = "visible";
+  document.getElementById("pfill").style.width = ((idx+1)/N*100)+"%";
+}
+
+function nextQ(){
+  idx++;
+  if(idx < N){ renderQ(); } else { showResult(); }
+}
+
+function showResult(){
+  show("result-screen");
+  const pt = correctCount * 5;
+  document.getElementById("score").textContent = pt + "点";
+  const msg = pt===100 ? "パーフェクト！すごい！🎉"
+    : pt>=80 ? "あと少しで満点！よくできました！"
+    : pt>=60 ? "いいちょうし！まちがえた字をふく習しよう。"
+    : "まちがえた字をおぼえて、もう一回チャレンジ！";
+  document.getElementById("msg").textContent = msg;
+  const rv = document.getElementById("review");
+  if(misses.length === 0){
+    rv.innerHTML = "";
+  } else {
+    rv.innerHTML = "<h3>まちがえた問題（"+misses.length+"問）</h3>" +
+      misses.map(m=>{
+        const full = m.q.s.replace("●", "<span class='ans'>"+m.q.a+"</span>");
+        return "<div class='review-item'>"+full+"（"+m.q.r+"）<br>" +
+          "<span class='yours'>きみの答え: "+m.yours+"</span></div>";
+      }).join("");
+  }
+  renderRanking(pt);
+}
+
+// ランキング（この端末のブラウザに記録がのこる）
+const RANK_KEY = "kanjiQuizRanking";
+
+function renderRanking(pt){
+  let ranks = [];
+  try { ranks = JSON.parse(localStorage.getItem(RANK_KEY)) || []; } catch(e){}
+  const d = new Date();
+  const entry = {
+    pt,
+    date: (d.getMonth()+1)+"/"+d.getDate()+" "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"),
+    id: Date.now()
+  };
+  ranks.push(entry);
+  ranks.sort((a,b)=> b.pt - a.pt || a.id - b.id);
+  ranks = ranks.slice(0,10);
+  try { localStorage.setItem(RANK_KEY, JSON.stringify(ranks)); } catch(e){}
+
+  const medals = ["🥇","🥈","🥉"];
+  document.getElementById("ranking").innerHTML =
+    "<h3>ランキング ベスト5</h3>" +
+    ranks.slice(0,5).map((r,i)=>
+      "<div class='rank-row"+(r.id===entry.id?" me":"")+"'>" +
+      "<span>"+(medals[i]||(i+1)+"位")+(r.id===entry.id?" 👈 今回":"")+"</span>" +
+      "<span class='date'>"+r.date+"</span>" +
+      "<span class='pt'>"+r.pt+"点</span></div>"
+    ).join("");
+}
+</script>
+</body>
+</html>
